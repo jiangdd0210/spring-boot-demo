@@ -1,21 +1,23 @@
 # spring-boot-demo-social
 
-> 此 demo 主要演示 Spring Boot 项目如何使用 **[史上最全的第三方登录工具 - JustAuth](https://github.com/zhangyd-c/JustAuth)** 实现第三方登录。
+> 此 demo 主要演示 Spring Boot 项目如何使用 **[史上最全的第三方登录工具 - JustAuth](https://github.com/zhangyd-c/JustAuth)** 实现第三方登录，包括QQ登录、GitHub登录、微信登录、谷歌登录、微软登录、小米登录、企业微信登录。
 >
-> 如果技术选型是 `JFinal` 的，请查看此 [**`demo`**](https://github.com/xkcoding/jfinal-justauth-demo)
->
-> https://github.com/xkcoding/jfinal-justauth-demo
->
-> 如果技术选型是 `ActFramework` 的，请查看此 [**`demo`**](https://github.com/xkcoding/act-justauth-demo)
->
-> https://github.com/xkcoding/act-justauth-demo
+> 通过 [justauth-spring-boot-starter](https://search.maven.org/artifact/com.xkcoding/justauth-spring-boot-starter) 快速集成，好嗨哟~
 >
 > JustAuth，如你所见，它仅仅是一个**第三方授权登录**的**工具类库**，它可以让我们脱离繁琐的第三方登录SDK，让登录变得**So easy!**
 >
 > 1. **全**：已集成十多家第三方平台（国内外常用的基本都已包含），后续依然还有扩展计划！
-> 2. **简**：API就是奔着最简单去设计的（见后面[`快速开始`](https://github.com/zhangyd-c/JustAuth#%E5%BF%AB%E9%80%9F%E5%BC%80%E5%A7%8B)），尽量让您用起来没有障碍感！
->
-> PS: 本人十分幸运的参与到了这个SDK的开发，主要开发了**QQ登录、微信登录、小米登录、微软登录、谷歌登录**这 **`5`** 个第三方登录，以及一些BUG的修复工作。再次感谢 [@母狼](https://github.com/zhangyd-c) 开源这个又好用又全面的第三方登录SDK。
+>2. **简**：API就是奔着最简单去设计的（见后面[`快速开始`](https://github.com/zhangyd-c/JustAuth#%E5%BF%AB%E9%80%9F%E5%BC%80%E5%A7%8B)），尽量让您用起来没有障碍感！
+> 
+>PS: 本人十分幸运的参与到了这个SDK的开发，主要开发了**QQ登录、微信登录、小米登录、微软登录、谷歌登录**这 **`5`** 个第三方登录，以及一些BUG的修复工作。再次感谢 [@母狼](https://github.com/zhangyd-c) 开源这个又好用又全面的第三方登录SDK。
+
+如果技术选型是 `JFinal` 的，请查看此 [**`demo`**](https://github.com/xkcoding/jfinal-justauth-demo)
+
+https://github.com/xkcoding/jfinal-justauth-demo
+
+如果技术选型是 `ActFramework` 的，请查看此 [**`demo`**](https://github.com/xkcoding/act-justauth-demo)
+
+https://github.com/xkcoding/act-justauth-demo
 
 ## 1. 环境准备
 
@@ -229,7 +231,19 @@ $ nginx -s reload
 
 ![image-20190617151624603](assets/image-20190617151624603.png)
 
+#### 1.5.7. 企业微信平台申请
+
+> 参考：https://xkcoding.com/2019/08/06/use-justauth-integration-wechat-enterprise.html
+
 ## 2. 主要代码
+
+> 本 demo 采用 Redis 缓存 state，所以请准备 Redis 环境，如果没有 Redis 环境，可以将配置文件的缓存配置为 
+>
+> ```yaml
+> justauth:
+>   cache:
+>     type: default
+> ```
 
 ### 2.1. pom.xml
 
@@ -256,7 +270,7 @@ $ nginx -s reload
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <java.version>1.8</java.version>
-    <spring.social.version>1.1.6.RELEASE</spring.social.version>
+    <justauth-spring-boot.version>1.1.0</justauth-spring-boot.version>
   </properties>
 
   <dependencies>
@@ -271,11 +285,22 @@ $ nginx -s reload
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-redis</artifactId>
+    </dependency>
+
+    <!-- 对象池，使用redis时必须引入 -->
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-pool2</artifactId>
+    </dependency>
+
     <!-- oauth工具类 -->
     <dependency>
-      <groupId>me.zhyd.oauth</groupId>
-      <artifactId>JustAuth</artifactId>
-      <version>1.9.5</version>
+      <groupId>com.xkcoding</groupId>
+      <artifactId>justauth-spring-boot-starter</artifactId>
+      <version>${justauth-spring-boot.version}</version>
     </dependency>
 
     <dependency>
@@ -316,110 +341,68 @@ server:
   servlet:
     context-path: /demo
 
-oauth:
-  qq:
-    client-id: 1015*****
-    client-secret: 1f7d08df55766**************
-    redirect-uri: http://oauth.xkcoding.com/demo/oauth/qq/callback
-  github:
-    client-id: 2d25a70**************
-    client-secret: 5a2919b5fe911567343**************
-    redirect-uri: http://oauth.xkcoding.com/demo/oauth/github/callback
-  wechat:
-    client-id: wxdcb31**************
-    client-secret: b4e9dc6841ef7d**************
-    redirect-uri: http://oauth.xkcoding.com/demo/oauth/wechat/callback
-  google:
-    client-id: 716518501517-6dbdkapivhia806vqcjjh9nttj3**************
-    client-secret: 9IBornd7w1A**************
-    redirect-uri: http://oauth.xkcoding.com/demo/oauth/google/callback
-  microsoft:
-    client-id: 7bdce818-2c8e-4b**************
-    client-secret: Iu0zZ43RQydo_FkD**************
-    redirect-uri: https://oauth.xkcoding.com/demo/oauth/microsoft/callback
-  mi:
-    client-id: 2882303**************
-    client-secret: nFeTt89Yn**************
-    redirect-uri: http://oauth.xkcoding.com/demo/oauth/mi/callback
+spring:
+  redis:
+    host: localhost
+    # 连接超时时间（记得添加单位，Duration）
+    timeout: 10000ms
+    # Redis默认情况下有16个分片，这里配置具体使用的分片
+    # database: 0
+    lettuce:
+      pool:
+        # 连接池最大连接数（使用负值表示没有限制） 默认 8
+        max-active: 8
+        # 连接池最大阻塞等待时间（使用负值表示没有限制） 默认 -1
+        max-wait: -1ms
+        # 连接池中的最大空闲连接 默认 8
+        max-idle: 8
+        # 连接池中的最小空闲连接 默认 0
+        min-idle: 0
+  cache:
+    # 一般来说是不用配置的，Spring Cache 会根据依赖的包自行装配
+    type: redis
+
+justauth:
+  enabled: true
+  type:
+    qq:
+      client-id: 10******85
+      client-secret: 1f7d************************d629e
+      redirect-uri: http://oauth.xkcoding.com/demo/oauth/qq/callback
+    github:
+      client-id: 2d25******d5f01086
+      client-secret: 5a2919b************************d7871306d1
+      redirect-uri: http://oauth.xkcoding.com/demo/oauth/github/callback
+    wechat:
+      client-id: wxdcb******4ff4
+      client-secret: b4e9dc************************a08ed6d
+      redirect-uri: http://oauth.xkcoding.com/demo/oauth/wechat/callback
+    google:
+      client-id: 716******17-6db******vh******ttj320i******userco******t.com
+      client-secret: 9IBorn************7-E
+      redirect-uri: http://oauth.xkcoding.com/demo/oauth/google/callback
+    microsoft:
+      client-id: 7bdce8******************e194ad76c1b
+      client-secret: Iu0zZ4************************tl9PWan_.
+      redirect-uri: https://oauth.xkcoding.com/demo/oauth/microsoft/callback
+    mi:
+      client-id: 288************2994
+      client-secret: nFeTt89************************==
+      redirect-uri: http://oauth.xkcoding.com/demo/oauth/mi/callback
+    wechat_enterprise:
+      client-id: ww58******f3************fbc
+      client-secret: 8G6PCr00j************************rgk************AyzaPc78
+      redirect-uri: http://oauth.xkcoding.com/demo/oauth/wechat_enterprise/callback
+      agent-id: 1*******2
+  cache:
+    type: redis
+    prefix: 'SOCIAL::STATE::'
+    timeout: 1h
 ```
 
-### 2.3. OAuthProperties.java
+### 2.3. OauthController.java
 
 ```java
-/**
- * <p>
- * 第三方登录配置
- * </p>
- *
- * @package: com.xkcoding.oauth.config.props
- * @description: 第三方登录配置
- * @author: yangkai.shen
- * @date: Created in 2019-05-17 15:33
- * @copyright: Copyright (c) 2019
- * @version: V1.0
- * @modified: yangkai.shen
- */
-@Data
-@Component
-@ConfigurationProperties(prefix = "oauth")
-public class OAuthProperties {
-    /**
-     * QQ 配置
-     */
-    private AuthConfig qq;
-
-    /**
-     * github 配置
-     */
-    private AuthConfig github;
-
-    /**
-     * 微信 配置
-     */
-    private AuthConfig wechat;
-
-    /**
-     * Google 配置
-     */
-    private AuthConfig google;
-
-    /**
-     * Microsoft 配置
-     */
-    private AuthConfig microsoft;
-
-    /**
-     * Mi 配置
-     */
-    private AuthConfig mi;
-}
-```
-
-### 2.4. OauthController.java
-
-```java
-package com.xkcoding.social.controller;
-
-import cn.hutool.core.lang.Dict;
-import cn.hutool.json.JSONUtil;
-import com.xkcoding.social.props.OAuthProperties;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import me.zhyd.oauth.config.AuthConfig;
-import me.zhyd.oauth.config.AuthSource;
-import me.zhyd.oauth.model.AuthCallback;
-import me.zhyd.oauth.model.AuthResponse;
-import me.zhyd.oauth.request.*;
-import me.zhyd.oauth.utils.AuthStateUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-
 /**
  * <p>
  * 第三方登录 Controller
@@ -438,14 +421,15 @@ import java.io.IOException;
 @RequestMapping("/oauth")
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class OauthController {
-    private final OAuthProperties properties;
+    private final AuthRequestFactory factory;
 
     /**
      * 登录类型
      */
     @GetMapping
-    public Dict loginType() {
-        return Dict.create().set("QQ登录", "http://oauth.xkcoding.com/demo/oauth/login/qq").set("GitHub登录", "http://oauth.xkcoding.com/demo/oauth/login/github").set("微信登录", "http://oauth.xkcoding.com/demo/oauth/login/wechat").set("Google登录", "http://oauth.xkcoding.com/demo/oauth/login/google").set("Microsoft 登录", "http://oauth.xkcoding.com/demo/oauth/login/microsoft").set("小米登录", "http://oauth.xkcoding.com/demo/oauth/login/mi");
+    public Map<String, String> loginType() {
+        List<String> oauthList = factory.oauthList();
+        return oauthList.stream().collect(Collectors.toMap(oauth -> oauth.toLowerCase() + "登录", oauth -> "http://oauth.xkcoding.com/demo/oauth/login/" + oauth.toLowerCase()));
     }
 
     /**
@@ -457,8 +441,8 @@ public class OauthController {
      */
     @RequestMapping("/login/{oauthType}")
     public void renderAuth(@PathVariable String oauthType, HttpServletResponse response) throws IOException {
-        AuthRequest authRequest = getAuthRequest(oauthType);
-        response.sendRedirect(authRequest.authorize(AuthStateUtils.createState()));
+        AuthRequest authRequest = factory.get(getAuthSource(oauthType));
+        response.sendRedirect(authRequest.authorize(oauthType + "::" + AuthStateUtils.createState()));
     }
 
     /**
@@ -470,64 +454,25 @@ public class OauthController {
      */
     @RequestMapping("/{oauthType}/callback")
     public AuthResponse login(@PathVariable String oauthType, AuthCallback callback) {
-        AuthRequest authRequest = getAuthRequest(oauthType);
+        AuthRequest authRequest = factory.get(getAuthSource(oauthType));
         AuthResponse response = authRequest.login(callback);
         log.info("【response】= {}", JSONUtil.toJsonStr(response));
         return response;
     }
 
-    private AuthRequest getAuthRequest(String oauthType) {
-        AuthSource authSource = AuthSource.valueOf(oauthType.toUpperCase());
-        switch (authSource) {
-            case QQ:
-                return getQqAuthRequest();
-            case GITHUB:
-                return getGithubAuthRequest();
-            case WECHAT:
-                return getWechatAuthRequest();
-            case GOOGLE:
-                return getGoogleAuthRequest();
-            case MICROSOFT:
-                return getMicrosoftAuthRequest();
-            case MI:
-                return getMiAuthRequest();
-            default:
-                throw new RuntimeException("暂不支持的第三方登录");
+    private AuthSource getAuthSource(String type) {
+        if (StrUtil.isNotBlank(type)) {
+            return AuthSource.valueOf(type.toUpperCase());
+        } else {
+            throw new RuntimeException("不支持的类型");
         }
     }
-
-    private AuthRequest getQqAuthRequest() {
-        AuthConfig authConfig = properties.getQq();
-        return new AuthQqRequest(authConfig);
-    }
-
-    private AuthRequest getGithubAuthRequest() {
-        AuthConfig authConfig = properties.getGithub();
-        return new AuthGithubRequest(authConfig);
-    }
-
-    private AuthRequest getWechatAuthRequest() {
-        AuthConfig authConfig = properties.getWechat();
-        return new AuthWeChatRequest(authConfig);
-    }
-
-    private AuthRequest getGoogleAuthRequest() {
-        AuthConfig authConfig = properties.getGoogle();
-        return new AuthGoogleRequest(authConfig);
-    }
-
-    private AuthRequest getMicrosoftAuthRequest() {
-        AuthConfig authConfig = properties.getMicrosoft();
-        return new AuthMicrosoftRequest(authConfig);
-    }
-
-    private AuthRequest getMiAuthRequest() {
-        AuthConfig authConfig = properties.getMi();
-        return new AuthMiRequest(authConfig);
-    }
 }
-
 ```
+
+### 2.4. 如果想要自定义 state 缓存
+
+请看👉[这里](https://github.com/justauth/justauth-spring-boot-starter#2-%E7%BC%93%E5%AD%98%E9%85%8D%E7%BD%AE)
 
 ## 3. 运行方式
 
@@ -535,20 +480,21 @@ public class OauthController {
 
 > `Google 登录，有可能因为祖国的强大导致测试失败，自行解决~` :kissing_smiling_eyes:
 
-![image-20190617154343815](assets/image-20190617154343815.png)
+![image-20190809161032422](https://static.xkcoding.com/blog/2019-08-09-081033.png)
 
 ## 参考
 
-1. JustAuth 项目地址：https://github.com/zhangyd-c/JustAuth
-2. frp内网穿透项目地址：https://github.com/fatedier/frp
-3. frp内网穿透官方中文文档：https://github.com/fatedier/frp/blob/master/README_zh.md
-4. Frp实现内网穿透：https://zhuanlan.zhihu.com/p/45445979
-5. QQ互联文档：http://wiki.connect.qq.com/%E5%87%86%E5%A4%87%E5%B7%A5%E4%BD%9C_oauth2-0
-6. 微信开放平台文档：https://open.weixin.qq.com/cgi-bin/showdocument?action=dir_list&t=resource/res_list&verify=1&id=open1419316505&token=&lang=zh_CN
-7. GitHub第三方登录文档：https://developer.github.com/apps/building-oauth-apps/
-8. 谷歌Oauth2文档：https://developers.google.com/identity/protocols/OpenIDConnect
-9. 微软Oauth2文档：https://docs.microsoft.com/zh-cn/graph/auth-v2-user
-10. 小米开放平台账号服务文档：https://dev.mi.com/console/doc/detail?pId=707
+1. JustAuth 项目地址：https://github.com/justauth/JustAuth
+2. justauth-spring-boot-starter 地址：https://github.com/justauth/justauth-spring-boot-starter
+3. frp内网穿透项目地址：https://github.com/fatedier/frp
+4. frp内网穿透官方中文文档：https://github.com/fatedier/frp/blob/master/README_zh.md
+5. Frp实现内网穿透：https://zhuanlan.zhihu.com/p/45445979
+6. QQ互联文档：http://wiki.connect.qq.com/%E5%87%86%E5%A4%87%E5%B7%A5%E4%BD%9C_oauth2-0
+7. 微信开放平台文档：https://open.weixin.qq.com/cgi-bin/showdocument?action=dir_list&t=resource/res_list&verify=1&id=open1419316505&token=&lang=zh_CN
+8. GitHub第三方登录文档：https://developer.github.com/apps/building-oauth-apps/
+9. 谷歌Oauth2文档：https://developers.google.com/identity/protocols/OpenIDConnect
+10. 微软Oauth2文档：https://docs.microsoft.com/zh-cn/graph/auth-v2-user
+11. 小米开放平台账号服务文档：https://dev.mi.com/console/doc/detail?pId=707
 
 
 
